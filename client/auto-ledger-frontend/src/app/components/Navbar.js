@@ -14,10 +14,10 @@ export default function Navbar() {
           Dashboard
         </Link>
         <Link
-          href="/add-entry"
+          href="/add-transaction"
           className="hover:text-blue-400 transition-colors"
         >
-          Add Entry
+          Add Transaction
         </Link>
         <Link href="/login" className="hover:text-red-400 transition-colors">
           Logout

@@ -24,6 +24,8 @@ export default function EditEntryPage() {
     const token = getToken();
     if (!token) return router.push("/login");
 
+    console.log("Fetching entry with ID:", id);
+
     const fetchEntry = async () => {
       try {
         const res = await api.get(`/api/ledger/${id}`, {

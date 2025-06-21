@@ -8,12 +8,19 @@ import Navbar from "../components/Navbar";
 
 export default function AddEntryPage() {
   const router = useRouter();
+  const categoryOptions: Record<string, string[]> = {
+    asset: ["cash", "accounts receivable", "supplies", "equipment"],
+    liability: ["accounts payable"],
+    equity: ["owners capital", "owners drawings", "revenue", "expense"],
+  };
+
   const [form, setForm] = useState({
     amount: "",
-    type: "asset",
-    category: "",
+    type: "", // debit or credit
+    mainCategory: "",
+    subCategory: "",
     description: "",
-    date: new Date().toISOString().slice(0, 10),
+    date: "",
   });
 
   const [error, setError] = useState("");
@@ -69,19 +76,42 @@ export default function AddEntryPage() {
             onChange={handleChange}
             className="bg-zinc-800 border border-zinc-700 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="asset">Asset</option>
-            <option value="liability">Liability</option>
-            <option value="capital">Capital</option>
+            <option value="">Select Type</option>
+            <option value="debit">Debit</option>
+            <option value="credit">Credit</option>
           </select>
 
-          <input
-            name="category"
-            placeholder="Category"
-            value={form.category}
+          <select
+            name="mainCategory"
+            value={form.mainCategory}
             onChange={handleChange}
             required
             className="bg-zinc-800 border border-zinc-700 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          >
+            <option value="">Select Main Category</option>
+            {Object.keys(categoryOptions).map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+
+          {form.mainCategory && (
+            <select
+              name="subCategory"
+              value={form.subCategory}
+              onChange={handleChange}
+              required
+              className="bg-zinc-800 border border-zinc-700 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select Sub Category</option>
+              {categoryOptions[form.mainCategory].map((sub) => (
+                <option key={sub} value={sub}>
+                  {sub}
+                </option>
+              ))}
+            </select>
+          )}
 
           <input
             name="description"

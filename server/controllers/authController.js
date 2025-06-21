@@ -15,12 +15,10 @@ const register = async (req, res) => {
       data: { name, email, password: hashedPassword },
     });
 
-    res
-      .status(201)
-      .json({
-        message: "User registered successfully",
-        user: { id: user.id, email: user.email },
-      });
+    res.status(201).json({
+      message: "User registered successfully",
+      user: { id: user.id, email: user.email },
+    });
   } catch (err) {
     res.status(500).json({ error: "Registration failed" });
   }
