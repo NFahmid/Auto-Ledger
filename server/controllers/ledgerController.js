@@ -1,4 +1,8 @@
 const prisma = require("../prisma/prismaclient");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Initialize Google AI Client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const addLedgerEntry = async (req, res) => {
   const {
@@ -162,8 +166,12 @@ const addTransaction = async (req, res) => {
 
   try {
     // Determine amounts based on accounting rules
-    const debitAmount = DEBIT_ACCOUNTS.includes(debit.mainCategory) ? amount : -amount;
-    const creditAmount = CREDIT_ACCOUNTS.includes(credit.mainCategory) ? amount : -amount;
+    const debitAmount = DEBIT_ACCOUNTS.includes(debit.mainCategory)
+      ? amount
+      : -amount;
+    const creditAmount = CREDIT_ACCOUNTS.includes(credit.mainCategory)
+      ? amount
+      : -amount;
 
     // Create the two ledger entries
     const debitEntry = {
@@ -185,7 +193,7 @@ const addTransaction = async (req, res) => {
       subCategory: credit.subCategory,
       description,
     };
-    
+
     await prisma.ledgerEntry.createMany({
       data: [debitEntry, creditEntry],
     });
@@ -197,6 +205,94 @@ const addTransaction = async (req, res) => {
   }
 };
 
+const analyzeTransaction = async (req, res) => {
+  const { text } = req.body;
+  console.log("AnalyzeTransaction called with text:", text);
+
+  if (!text) {
+    console.log("No text provided");
+    return res.status(400).json({ error: "No text provided" });
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const prompt = `
+      Analyze the following transaction description and determine the debit and credit accounts based on standard double-entry accounting principles.
+      The user's text is: "${text}"
+
+      Return a JSON object with two keys: "debit" and "credit".
+      For each key, provide the "mainCategory" and "subCategory".
+
+      Here are the primary categories to use:
+      - Asset
+      - Liability
+      - Equity
+      - Revenue
+      - Expense
+
+      Based on the text, infer a logical sub-category.
+      For example, for "paid rent", the expense sub-category should be "Rent". For "bought a new laptop", the asset sub-category should be "Equipment" or "Electronics".
+
+      Example 1: "I paid $100 for rent"
+      Output should be:
+      {
+        "debit": { "mainCategory": "Expense", "subCategory": "Rent" },
+        "credit": { "mainCategory": "Asset", "subCategory": "Cash" }
+      }
+
+      Example 2: "Received a $1,000 investment from a shareholder"
+      Output should be:
+      {
+        "debit": { "mainCategory": "Asset", "subCategory": "Cash" },
+        "credit": { "mainCategory": "Equity", "subCategory": "Owner's Investment" }
+      }
+      
+      Example 3: "Sold services for $500 cash"
+      Output should be:
+      {
+        "debit": { "mainCategory": "Asset", "subCategory": "Cash" },
+        "credit": { "mainCategory": "Revenue", "subCategory": "Service Revenue" }
+      }
+
+      Return only a valid JSON object in a string format, with no other text or markdown backticks.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const jsonString = response.text();
+    console.log("Gemini raw response:", jsonString);
+
+    const cleanedJsonString = jsonString.replace(/```json\n|```/g, "").trim();
+    console.log("Cleaned JSON string:", cleanedJsonString);
+
+    let data;
+    try {
+      data = JSON.parse(cleanedJsonString);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError, "String was:", cleanedJsonString);
+      return res.status(500).json({ error: "Failed to parse Gemini response as JSON." });
+    }
+
+    console.log("Sending response:", data);
+    res.json(data);
+  } catch (error) {
+    console.error("❌ Gemini API error:", error);
+    res.status(500).json({ error: "Failed to analyze transaction with Gemini AI." });
+  }
+};
+
+// Utility: List available Gemini models (for debugging)
+if (require.main === module) {
+  (async () => {
+    try {
+      const models = await genAI.listModels();
+      console.log("Available Gemini models:", models);
+    } catch (err) {
+      console.error("Error listing Gemini models:", err);
+    }
+  })();
+}
+
 module.exports = {
   addLedgerEntry,
   getUserLedger,
@@ -205,4 +301,5 @@ module.exports = {
   getAllLedgerEntries,
   getLedgerSummary,
   addTransaction,
+  analyzeTransaction,
 };
