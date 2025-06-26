@@ -261,34 +261,35 @@ const AddTransactionPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <Navbar />
-      <div className="flex flex-col items-center pt-10">
-        <h1 className="text-4xl font-bold mb-8">Add New Transaction</h1>
-        <form
-          onSubmit={handleSubmit}
-          className="w-full max-w-4xl bg-gray-800 p-8 rounded-lg shadow-lg"
-        >
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-blue-100 flex flex-col items-center py-10 px-2 animate-fadeIn">
+      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl p-8 mb-8 border border-blue-100 animate-fadeInUp">
+        <h1 className="text-4xl font-bold mb-8 text-blue-800 flex items-center gap-2">
+          <span className="material-icons text-blue-400 animate-navbarIcon">
+            sync_alt
+          </span>
+          Add New Transaction
+        </h1>
+        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
           {error && (
-            <p className="text-red-500 bg-red-900/20 p-3 rounded-md mb-4">
+            <p className="text-red-500 bg-red-100/60 p-3 rounded-md mb-2 animate-shake">
               {error}
             </p>
           )}
           {success && (
-            <p className="text-green-500 bg-green-900/20 p-3 rounded-md mb-4">
+            <p className="text-green-500 bg-green-100/60 p-3 rounded-md mb-2 animate-fadeIn">
               {success}
             </p>
           )}
 
           {/* AI Assist Section */}
-          <div className="bg-gray-700/50 border border-purple-500/30 p-4 rounded-lg mb-8">
+          <div className="bg-gradient-to-r from-blue-100 via-purple-100 to-blue-50 border border-purple-200 p-4 rounded-xl mb-8 animate-fadeInUp">
             <label
               htmlFor="ai-text"
-              className="block text-lg font-medium mb-2 text-purple-300"
+              className="block text-lg font-medium mb-2 text-purple-700"
             >
               🤖 AI Assist
             </label>
-            <p className="text-sm text-gray-400 mb-3">
+            <p className="text-sm text-blue-500 mb-3">
               Describe the transaction in plain language. e.g., "Paid $500 for
               office rent".
             </p>
@@ -296,7 +297,7 @@ const AddTransactionPage = () => {
               <input
                 type="text"
                 id="ai-text"
-                className="w-full p-3 bg-gray-900 rounded-md border border-gray-600 focus:ring-2 focus:ring-purple-500"
+                className="w-full text-blue-900 p-3 bg-blue-50 rounded-md border border-blue-200 focus:ring-2 focus:ring-purple-300 transition-all"
                 value={aiText}
                 onChange={(e) => setAiText(e.target.value)}
                 placeholder="Type here..."
@@ -305,7 +306,7 @@ const AddTransactionPage = () => {
               <button
                 type="button"
                 onClick={handleAiAnalyze}
-                className="p-3 bg-purple-600 rounded-md font-semibold hover:bg-purple-700 disabled:bg-gray-500 disabled:cursor-not-allowed"
+                className="p-3 bg-gradient-to-r from-purple-400 to-blue-400 rounded-md font-semibold hover:scale-105 hover:from-purple-500 hover:to-blue-500 transition-all disabled:bg-blue-200 disabled:cursor-not-allowed text-white"
                 disabled={isAnalyzing || !aiText}
               >
                 {isAnalyzing ? "Analyzing..." : "Analyze"}
@@ -314,7 +315,7 @@ const AddTransactionPage = () => {
           </div>
 
           {aiSuggestion && (
-            <div className="mb-8 p-4 bg-purple-900/20 border border-purple-400 rounded-lg text-purple-200 text-center">
+            <div className="mb-8 p-4 bg-purple-100 border border-purple-300 rounded-lg text-purple-800 text-center animate-fadeInUp">
               <div className="font-semibold mb-1">AI Suggestion:</div>
               <div>
                 <span className="font-bold">Debit</span>:{" "}
@@ -324,7 +325,7 @@ const AddTransactionPage = () => {
                 {aiSuggestion.credit.mainCategory} /{" "}
                 {aiSuggestion.credit.subCategory}
               </div>
-              <div className="text-xs text-purple-300 mt-1">
+              <div className="text-xs text-purple-500 mt-1">
                 Select these in the dropdowns below to use the AI suggestion.
               </div>
             </div>
@@ -332,20 +333,19 @@ const AddTransactionPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             {/* Debit Section */}
-            <div className="bg-gray-700 p-6 rounded-lg">
-              <h2 className="text-2xl font-semibold mb-4 text-red-400">
+            <div className="bg-blue-50 p-6 rounded-xl border border-blue-200 animate-fadeInUp">
+              <h2 className="text-2xl font-semibold mb-4 text-blue-700">
                 Debit (Dr)
               </h2>
-              {/* Main Category Dropdown */}
               <label
                 htmlFor="debit-main"
-                className="block text-sm font-medium mb-2"
+                className="block text-sm font-medium mb-2 text-blue-700"
               >
                 Main Category
               </label>
               <select
                 id="debit-main"
-                className="w-full p-3 mb-3 bg-gray-900 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500"
+                className="w-full text-blue-900 p-3 mb-3 bg-white rounded-md border border-blue-200 focus:ring-2 focus:ring-blue-400 transition-all"
                 value={debitAccount?.mainCategory || ""}
                 onChange={(e) => {
                   const main = e.target.value;
@@ -361,16 +361,15 @@ const AddTransactionPage = () => {
                   </option>
                 ))}
               </select>
-              {/* Subcategory Dropdown */}
               <label
                 htmlFor="debit-sub"
-                className="block text-sm font-medium mb-2"
+                className="block text-sm font-medium mb-2 text-blue-700"
               >
                 Account
               </label>
               <select
                 id="debit-sub"
-                className="w-full p-3 bg-gray-900 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500"
+                className="w-full text-blue-900 p-3 bg-white rounded-md border border-blue-200 focus:ring-2 focus:ring-blue-400 transition-all"
                 onChange={(e) => handleDebitSubChange(e.target.value)}
                 value={debitAccount?.subCategory || ""}
                 disabled={!debitAccount?.mainCategory}
@@ -385,20 +384,19 @@ const AddTransactionPage = () => {
             </div>
 
             {/* Credit Section */}
-            <div className="bg-gray-700 p-6 rounded-lg">
-              <h2 className="text-2xl font-semibold mb-4 text-green-400">
+            <div className="bg-purple-50 p-6 rounded-xl border border-purple-200 animate-fadeInUp">
+              <h2 className="text-2xl font-semibold mb-4 text-purple-700">
                 Credit (Cr)
               </h2>
-              {/* Main Category Dropdown */}
               <label
                 htmlFor="credit-main"
-                className="block text-sm font-medium mb-2"
+                className="block text-sm font-medium mb-2 text-purple-700"
               >
                 Main Category
               </label>
               <select
                 id="credit-main"
-                className="w-full p-3 mb-3 bg-gray-900 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500"
+                className="w-full text-blue-900 p-3 mb-3 bg-white rounded-md border border-purple-200 focus:ring-2 focus:ring-purple-400 transition-all"
                 value={creditAccount?.mainCategory || ""}
                 onChange={(e) => {
                   const main = e.target.value;
@@ -415,16 +413,15 @@ const AddTransactionPage = () => {
                   </option>
                 ))}
               </select>
-              {/* Subcategory Dropdown */}
               <label
                 htmlFor="credit-sub"
-                className="block text-sm font-medium mb-2"
+                className="block text-sm font-medium mb-2 text-purple-700"
               >
                 Account
               </label>
               <select
                 id="credit-sub"
-                className="w-full p-3 bg-gray-900 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500"
+                className="w-full text-blue-900 p-3 bg-white rounded-md border border-purple-200 focus:ring-2 focus:ring-purple-400 transition-all"
                 onChange={(e) => handleCreditSubChange(e.target.value)}
                 value={creditAccount?.subCategory || ""}
                 disabled={!creditAccount?.mainCategory}
@@ -441,13 +438,16 @@ const AddTransactionPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div>
-              <label htmlFor="date" className="block text-sm font-medium mb-2">
+              <label
+                htmlFor="date"
+                className="block text-sm font-medium mb-2 text-blue-700"
+              >
                 Date
               </label>
               <input
                 type="date"
                 id="date"
-                className="w-full p-3 bg-gray-900 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500"
+                className="w-full text-blue-900 p-3 bg-white rounded-md border border-blue-200 focus:ring-2 focus:ring-blue-400 transition-all"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
@@ -456,14 +456,14 @@ const AddTransactionPage = () => {
             <div className="md:col-span-2">
               <label
                 htmlFor="description"
-                className="block text-sm font-medium mb-2"
+                className="block text-sm font-medium mb-2 text-blue-700"
               >
                 Description
               </label>
               <input
                 type="text"
                 id="description"
-                className="w-full p-3 bg-gray-900 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500"
+                className="w-full text-blue-900 p-3 bg-white rounded-md border border-blue-200 focus:ring-2 focus:ring-blue-400 transition-all"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="e.g., Sale of services to Client X"
@@ -473,13 +473,16 @@ const AddTransactionPage = () => {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="amount" className="block text-sm font-medium mb-2">
+            <label
+              htmlFor="amount"
+              className="block text-sm font-medium mb-2 text-blue-700"
+            >
               Amount
             </label>
             <input
               type="number"
               id="amount"
-              className="w-full p-3 bg-gray-900 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500"
+              className="w-full text-blue-900 p-3 bg-white rounded-md border border-blue-200 focus:ring-2 focus:ring-blue-400 transition-all"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
@@ -489,7 +492,7 @@ const AddTransactionPage = () => {
 
           <button
             type="submit"
-            className="w-full p-4 bg-blue-600 rounded-md font-semibold hover:bg-blue-700 disabled:bg-gray-500 disabled:cursor-not-allowed"
+            className="w-full p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-semibold hover:scale-105 hover:from-blue-600 hover:to-purple-600 transition-all duration-200 text-white disabled:bg-blue-200 disabled:cursor-not-allowed animate-fadeInUp"
             disabled={
               !debitAccount?.subCategory ||
               !creditAccount?.subCategory ||
@@ -500,6 +503,54 @@ const AddTransactionPage = () => {
           </button>
         </form>
       </div>
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.7s;
+        }
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeInUp {
+          animation: fadeInUp 0.7s;
+        }
+        @keyframes shake {
+          10%,
+          90% {
+            transform: translateX(-1px);
+          }
+          20%,
+          80% {
+            transform: translateX(2px);
+          }
+          30%,
+          50%,
+          70% {
+            transform: translateX(-4px);
+          }
+          40%,
+          60% {
+            transform: translateX(4px);
+          }
+        }
+        .animate-shake {
+          animation: shake 0.5s;
+        }
+      `}</style>
     </div>
   );
 };

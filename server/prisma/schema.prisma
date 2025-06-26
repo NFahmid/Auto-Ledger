@@ -13,6 +13,8 @@ model User {
   email     String        @unique
   password  String
   ledger    LedgerEntry[]
+  categories Category[]
+  budgets   Budget[]
   createdAt DateTime      @default(now())
 }
 
@@ -23,10 +25,32 @@ model LedgerEntry {
   date           DateTime
   amount         Float
   type           String
-  mainCategory   String
-  subCategory    String
   description    String?
   createdFromAI  Boolean   @default(false)
+  transactionId  String?
+  category       Category? @relation("CategoryLedgerEntries", fields: [categoryId], references: [id])
+  categoryId     Int?
+  @@index([transactionId])
+}
+
+model Category {
+  id        Int           @id @default(autoincrement())
+  name      String
+  user      User?         @relation(fields: [userId], references: [id])
+  userId    Int?
+  budgets   Budget[]
+  ledger    LedgerEntry[] @relation("CategoryLedgerEntries")
+}
+
+model Budget {
+  id          Int       @id @default(autoincrement())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  category    Category  @relation(fields: [categoryId], references: [id])
+  categoryId  Int
+  periodStart DateTime
+  periodEnd   DateTime
+  amount      Float
 }
 
 

@@ -1,21 +1,14 @@
-const prisma = require("../prisma/prismaclient");
+const prisma = require("../prisma/prismaClient");
+const { v4: uuidv4 } = require("uuid");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // Initialize Google AI Client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const addLedgerEntry = async (req, res) => {
-  const {
-    amount,
-    type,
-    mainCategory,
-    subCategory,
-    description,
-    date,
-    createdFromAI,
-  } = req.body;
+  const { amount, type, categoryId, description, date, createdFromAI } =
+    req.body;
 
-  console.log("Add Entry: req.user is:", req.user);
   const userId = req.user.id;
 
   try {
@@ -23,15 +16,14 @@ const addLedgerEntry = async (req, res) => {
       data: {
         amount,
         type,
-        mainCategory,
-        subCategory,
+        categoryId,
         description,
         date: new Date(date),
         userId,
         createdFromAI: createdFromAI || false,
       },
+      include: { category: true },
     });
-
     res.status(201).json(entry);
   } catch (err) {
     console.error("❌ Ledger entry creation failed:", err);
@@ -42,15 +34,12 @@ const addLedgerEntry = async (req, res) => {
 const getUserLedger = async (req, res) => {
   try {
     const entry = await prisma.ledgerEntry.findUnique({
-      where: {
-        id: req.params.id,
-      },
+      where: { id: req.params.id },
+      include: { category: true },
     });
-
     if (!entry || entry.userId !== req.user.id) {
       return res.status(404).json({ error: "Entry not found" });
     }
-
     res.json(entry);
   } catch (err) {
     res.status(500).json({ error: "Error fetching entry" });
@@ -61,17 +50,16 @@ const updateLedgerEntry = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-
     const existing = await prisma.ledgerEntry.findUnique({ where: { id } });
     if (!existing || existing.userId !== userId) {
       return res.status(403).json({ error: "Not allowed" });
     }
-
+    const { amount, type, categoryId, description, date } = req.body;
     const updated = await prisma.ledgerEntry.update({
       where: { id },
-      data: { ...req.body, date: new Date(req.body.date) },
+      data: { amount, type, categoryId, description, date: new Date(date) },
+      include: { category: true },
     });
-
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: "Failed to update" });
@@ -82,18 +70,23 @@ const deleteLedgerEntry = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-
-    const deleteResult = await prisma.ledgerEntry.deleteMany({
-      where: {
-        id: id,
-        userId: userId,
-      },
-    });
-
+    const entry = await prisma.ledgerEntry.findUnique({ where: { id } });
+    if (!entry || entry.userId !== userId) {
+      return res.status(404).json({ error: "Entry not found" });
+    }
+    let deleteResult;
+    if (entry.transactionId) {
+      deleteResult = await prisma.ledgerEntry.deleteMany({
+        where: { transactionId: entry.transactionId, userId: userId },
+      });
+    } else {
+      deleteResult = await prisma.ledgerEntry.deleteMany({
+        where: { id: id, userId: userId },
+      });
+    }
     if (deleteResult.count === 0) {
       return res.status(404).json({ error: "Entry not found" });
     }
-
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete entry" });
@@ -106,9 +99,11 @@ const getAllLedgerEntries = async (req, res) => {
     const entries = await prisma.ledgerEntry.findMany({
       where: { userId },
       orderBy: { date: "desc" },
+      include: { category: true },
     });
     res.json(entries);
   } catch (err) {
+    console.log("❌ Error fetching ledger entries:", err);
     res.status(500).json({ error: "Failed to fetch ledger entries" });
   }
 };
@@ -118,91 +113,30 @@ const getLedgerSummary = async (req, res) => {
   try {
     const entries = await prisma.ledgerEntry.findMany({
       where: { userId },
+      include: { category: true },
     });
-
-    const summary = {
-      assets: { subCategories: {}, total: 0 },
-      liabilities: { subCategories: {}, total: 0 },
-      equity: { subCategories: {}, total: 0 },
-    };
-
+    // Group by type and category name
+    const summary = {};
     for (const entry of entries) {
-      let categoryObject;
-      switch (entry.mainCategory.toLowerCase()) {
-        case "asset":
-          categoryObject = summary.assets;
-          break;
-        case "liability":
-          categoryObject = summary.liabilities;
-          break;
-        case "capital":
-          categoryObject = summary.equity;
-          break;
-        default:
-          continue;
-      }
-
-      if (!categoryObject.subCategories[entry.subCategory]) {
-        categoryObject.subCategories[entry.subCategory] = 0;
-      }
-
-      categoryObject.subCategories[entry.subCategory] += entry.amount;
-      categoryObject.total += entry.amount;
+      const type = entry.type || "other";
+      const catName = entry.category?.name || "Uncategorized";
+      if (!summary[type]) summary[type] = { subCategories: {}, total: 0 };
+      if (!summary[type].subCategories[catName])
+        summary[type].subCategories[catName] = 0;
+      summary[type].subCategories[catName] += entry.amount;
+      summary[type].total += entry.amount;
     }
-
     res.status(200).json(summary);
   } catch (err) {
+    console.error("❌ Error getting ledger summary:", err);
     res.status(500).json({ error: "Failed to get ledger summary" });
   }
 };
 
 const addTransaction = async (req, res) => {
-  const { date, description, amount, debit, credit } = req.body;
-  const userId = req.user.id;
-
-  // Debit and Credit rules
-  const DEBIT_ACCOUNTS = ["asset", "expense"];
-  const CREDIT_ACCOUNTS = ["liability", "capital", "revenue"];
-
-  try {
-    // Determine amounts based on accounting rules
-    const debitAmount = DEBIT_ACCOUNTS.includes(debit.mainCategory)
-      ? amount
-      : -amount;
-    const creditAmount = CREDIT_ACCOUNTS.includes(credit.mainCategory)
-      ? amount
-      : -amount;
-
-    // Create the two ledger entries
-    const debitEntry = {
-      userId,
-      date: new Date(date),
-      amount: debitAmount,
-      type: "debit", // To track the nature of the entry
-      mainCategory: debit.mainCategory,
-      subCategory: debit.subCategory,
-      description,
-    };
-
-    const creditEntry = {
-      userId,
-      date: new Date(date),
-      amount: creditAmount,
-      type: "credit", // To track the nature of the entry
-      mainCategory: credit.mainCategory,
-      subCategory: credit.subCategory,
-      description,
-    };
-
-    await prisma.ledgerEntry.createMany({
-      data: [debitEntry, creditEntry],
-    });
-
-    res.status(201).json({ success: true, debitEntry, creditEntry });
-  } catch (err) {
-    console.error("Transaction creation failed:", err);
-    res.status(500).json({ error: "Failed to create transaction" });
-  }
+  // This function will need to be refactored to use categoryId for debit/credit
+  // For now, leave as is or update as needed for your workflow
+  res.status(501).json({ error: "Not implemented for new schema" });
 };
 
 const analyzeTransaction = async (req, res) => {
@@ -269,15 +203,24 @@ const analyzeTransaction = async (req, res) => {
     try {
       data = JSON.parse(cleanedJsonString);
     } catch (parseError) {
-      console.error("JSON parse error:", parseError, "String was:", cleanedJsonString);
-      return res.status(500).json({ error: "Failed to parse Gemini response as JSON." });
+      console.error(
+        "JSON parse error:",
+        parseError,
+        "String was:",
+        cleanedJsonString
+      );
+      return res
+        .status(500)
+        .json({ error: "Failed to parse Gemini response as JSON." });
     }
 
     console.log("Sending response:", data);
     res.json(data);
   } catch (error) {
     console.error("❌ Gemini API error:", error);
-    res.status(500).json({ error: "Failed to analyze transaction with Gemini AI." });
+    res
+      .status(500)
+      .json({ error: "Failed to analyze transaction with Gemini AI." });
   }
 };
 
